@@ -7,7 +7,6 @@ import LoginForm from './components/LoginForm';
 import PassengerDashboard from './components/PassengerDashboard';
 import RunwayStatus from './components/RunwayStatus';
 import { Plane, TowerControl, Radio } from 'lucide-react';
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 function App() {
   const [gameState, setGameState] = useState(null);
@@ -107,10 +106,10 @@ function App() {
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <a href={`${API_BASE_URL}/export`} className="text-xs font-mono uppercase tracking-wider px-3 py-1 rounded border border-slate-700 hover:bg-slate-800 text-slate-300 transition-colors">
+            <a href="http://localhost:3001/export" className="text-xs font-mono uppercase tracking-wider px-3 py-1 rounded border border-slate-700 hover:bg-slate-800 text-slate-300 transition-colors">
               CSV
             </a>
-            <a href={`${API_BASE_URL}/export/pdf`} className="text-xs font-mono uppercase tracking-wider px-3 py-1 rounded border border-slate-700 hover:bg-emerald-900/30 text-emerald-400 border-emerald-900/50 transition-colors">
+            <a href="http://localhost:3001/export/pdf" className="text-xs font-mono uppercase tracking-wider px-3 py-1 rounded border border-slate-700 hover:bg-emerald-900/30 text-emerald-400 border-emerald-900/50 transition-colors">
               PDF Report
             </a>
             <button

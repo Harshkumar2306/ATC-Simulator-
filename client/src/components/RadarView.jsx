@@ -3,10 +3,20 @@ import React, { useEffect, useRef } from 'react';
 const RadarView = ({ aircrafts, runways }) => {
     const canvasRef = useRef(null);
 
+    const aircraftsRef = useRef(aircrafts);
+    const runwaysRef = useRef(runways);
+
+    // Update refs whenever props change, without restarting the animation loop
+    useEffect(() => {
+        aircraftsRef.current = aircrafts;
+        runwaysRef.current = runways;
+    }, [aircrafts, runways]);
+
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
+        let animationId;
 
         // Canvas dimensions
         const width = canvas.width;
@@ -40,7 +50,7 @@ const RadarView = ({ aircrafts, runways }) => {
             ctx.stroke();
 
             // Draw Runways
-            runways.forEach(runway => {
+            runwaysRef.current.forEach(runway => {
                 // Simplified runway representation
                 // For now, draw them near center
                 ctx.save();
@@ -58,7 +68,7 @@ const RadarView = ({ aircrafts, runways }) => {
             });
 
             // Draw Aircraft
-            aircrafts.forEach(ac => {
+            aircraftsRef.current.forEach(ac => {
                 if (ac.state === 'FINISHED') return;
 
                 const x = centerX + ac.x * scale;
@@ -109,11 +119,13 @@ const RadarView = ({ aircrafts, runways }) => {
             ctx.arc(0, 0, 110 * scale, -0.2, 0.2); // Wedge
             ctx.fill();
             ctx.restore();
+            
+            animationId = requestAnimationFrame(render);
         };
 
-        const animationId = requestAnimationFrame(render);
+        animationId = requestAnimationFrame(render);
         return () => cancelAnimationFrame(animationId);
-    }, [aircrafts, runways]);
+    }, []);
 
     return (
         <div className="relative w-full h-full bg-slate-900 rounded-xl overflow-hidden shadow-2xl border border-slate-800">

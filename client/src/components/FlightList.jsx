@@ -2,11 +2,21 @@ import React from 'react';
 import { Plane, AlertTriangle } from 'lucide-react';
 
 const FlightList = ({ aircrafts, runways, onCommand }) => {
-    // Sort: Emergency > Landing > Takeoff > Airborne > Parked
+    const stateWeights = {
+        'LANDING': 4,
+        'TAKEOFF': 3,
+        'AIRBORNE': 2,
+        'TAXIING': 1,
+        'PARKED': 0,
+        'FINISHED': -1
+    };
+
     const sorted = [...aircrafts].sort((a, b) => {
-        if (a.emergency) return -1;
-        if (b.emergency) return 1;
-        return 0; // Simplified
+        if (a.emergency && !b.emergency) return -1;
+        if (!a.emergency && b.emergency) return 1;
+        const weightA = stateWeights[a.state] || 0;
+        const weightB = stateWeights[b.state] || 0;
+        return weightB - weightA;
     });
 
     const isRunwayFree = (id) => {
@@ -38,7 +48,7 @@ const FlightList = ({ aircrafts, runways, onCommand }) => {
                         <div className="grid grid-cols-2 gap-2 text-xs text-slate-400 font-mono">
                             <div>ALT: {Math.floor(ac.altitude)}</div>
                             <div>SPD: {Math.floor(ac.speed)}</div>
-                            <div>PHASE: <span className={getStateColor(ac.state)}>{ac.state}</span></div>
+                            <div>PHASE: <span className={getStateColor(ac.emergency ? 'EMERGENCY' : ac.state)}>{ac.emergency ? 'EMERGENCY' : ac.state}</span></div>
                         </div>
 
                         {/* Controls */}

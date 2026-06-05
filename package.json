@@ -1,0 +1,12 @@
+{
+  "name": "atc-simulator-root",
+  "version": "1.0.0",
+  "description": "Air Traffic Control Simulator",
+  "scripts": {
+    "postinstall": "cd server && npm install && cd ../client && npm install",
+    "build": "cd client && npm run build",
+    "start": "cd server && node index.js"
+  },
+  "author": "",
+  "license": "ISC"
+}

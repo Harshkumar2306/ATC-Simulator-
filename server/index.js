@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const path = require('path');
 const GameServer = require('./game/GameServer');
 
 const app = express();
@@ -9,8 +10,8 @@ const db = require('./db');
 app.use(cors());
 app.use(express.json());
 
-// Hardcoded secret for simplicity
-const ADMIN_PASSWORD = 'admin123';
+// Hardcoded secret for simplicity fallback
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 const TOKENS = new Set(); // In-memory token store
 
 app.post('/login', (req, res) => {
@@ -152,7 +153,7 @@ const io = new Server(server, {
     }
 });
 
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 // Initialize the Game Server
 const game = new GameServer(io);
@@ -184,6 +185,14 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         console.log('Client disconnected:', socket.id);
     });
+});
+
+// Serve static frontend files
+app.use(express.static(path.join(__dirname, '../client/dist')));
+
+// Catch-all route to serve the React app
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
 
 server.listen(PORT, () => {

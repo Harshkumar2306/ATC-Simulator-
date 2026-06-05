@@ -164,6 +164,10 @@ class Aircraft {
 
     hold() {
         if (this.state === 'LANDING') {
+            if (this.targetRunway) {
+                const runway = this.gameServer.runways.get(this.targetRunway);
+                if (runway) runway.release();
+            }
             this.state = 'AIRBORNE';
             this.targetRunway = null;
             this.actionTime = null;

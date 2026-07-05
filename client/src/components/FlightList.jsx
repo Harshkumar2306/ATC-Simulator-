@@ -51,6 +51,26 @@ const FlightList = ({ aircrafts, runways, onCommand }) => {
                             <div>PHASE: <span className={getStateColor(ac.emergency ? 'EMERGENCY' : ac.state)}>{ac.emergency ? 'EMERGENCY' : ac.state}</span></div>
                         </div>
 
+                        {/* Advanced Controls (Vectoring) */}
+                        {ac.state === 'AIRBORNE' && (
+                            <div className="grid grid-cols-2 gap-1 mt-1 pt-2 border-t border-slate-700/50">
+                                <div className="flex items-center justify-between bg-slate-900/50 rounded px-1 border border-slate-700">
+                                    <span className="text-[9px] text-slate-500 font-bold">HDG</span>
+                                    <div className="flex">
+                                        <button onClick={() => onCommand('CHANGE_HEADING', ac.id, { heading: Math.floor(ac.heading - 10) })} className="text-[10px] px-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded">-</button>
+                                        <button onClick={() => onCommand('CHANGE_HEADING', ac.id, { heading: Math.floor(ac.heading + 10) })} className="text-[10px] px-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded">+</button>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between bg-slate-900/50 rounded px-1 border border-slate-700">
+                                    <span className="text-[9px] text-slate-500 font-bold">ALT</span>
+                                    <div className="flex">
+                                        <button onClick={() => onCommand('CHANGE_ALTITUDE', ac.id, { altitude: Math.floor(ac.altitude - 1000) })} className="text-[10px] px-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded">-</button>
+                                        <button onClick={() => onCommand('CHANGE_ALTITUDE', ac.id, { altitude: Math.floor(ac.altitude + 1000) })} className="text-[10px] px-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Controls */}
                         <div className="flex gap-1 mt-2">
                             {ac.type === 'ARRIVAL' && ac.state === 'AIRBORNE' && !ac.targetRunway && (

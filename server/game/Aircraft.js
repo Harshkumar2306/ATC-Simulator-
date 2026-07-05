@@ -23,6 +23,8 @@ class Aircraft {
         this.heading = 0;
 
         this.targetRunway = null;
+        this.targetHeading = null;
+        this.targetAltitude = null;
 
         this.initializePosition();
     }
@@ -60,6 +62,57 @@ class Aircraft {
         if (this.state === 'FINISHED') return;
 
         if (this.state === 'AIRBORNE' || this.state === 'LANDING' || this.state === 'TAKEOFF' || this.state === 'TAXIING') {
+            
+            if (this.state === 'AIRBORNE' || this.state === 'LANDING') {
+                // Apply Wind Drift
+                if (this.gameServer && this.gameServer.weather) {
+                    const wind = this.gameServer.weather.getWindVector();
+                    this.x += wind.x * dt;
+                    this.y += wind.y * dt;
+
+                    // Check Storms
+                    for (const storm of this.gameServer.weather.stormCells) {
+                        const dx = this.x - storm.x;
+                        const dy = this.y - storm.y;
+                        if (Math.sqrt(dx*dx + dy*dy) < storm.radius) {
+                            if (Math.random() < 0.05 * dt && !this.emergency) {
+                                this.gameServer.log(`TURBULENCE ALERT: ${this.callsign} has entered a storm cell!`);
+                                if (storm.intensity === 3 && Math.random() < 0.1) {
+                                    this.declareEmergency();
+                                    this.gameServer.log(`MAYDAY: ${this.callsign} declaring emergency due to severe weather damage!`);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Target Heading Adjustment
+            if (this.targetHeading !== null && this.state === 'AIRBORNE') {
+                let diff = this.targetHeading - this.heading;
+                while (diff > 180) diff -= 360;
+                while (diff < -180) diff += 360;
+                
+                if (Math.abs(diff) < 2) {
+                    this.heading = this.targetHeading;
+                } else {
+                    this.heading += Math.sign(diff) * 15 * dt; 
+                }
+                while (this.heading < 0) this.heading += 360;
+                while (this.heading >= 360) this.heading -= 360;
+            }
+
+            // Target Altitude Adjustment
+            if (this.targetAltitude !== null && this.state === 'AIRBORNE') {
+                if (Math.abs(this.altitude - this.targetAltitude) < 50) {
+                    this.altitude = this.targetAltitude;
+                } else if (this.altitude < this.targetAltitude) {
+                    this.altitude += 500 * dt;
+                } else {
+                    this.altitude -= 500 * dt;
+                }
+            }
+
             // Move based on heading and speed
             const moveSpeed = (this.speed / 100) * 2;
 
@@ -171,7 +224,25 @@ class Aircraft {
             this.state = 'AIRBORNE';
             this.targetRunway = null;
             this.actionTime = null;
+            this.targetHeading = this.heading; // Maintain current heading when holding
+            this.targetAltitude = 3000; // Climb to hold altitude
         }
+    }
+
+    setHeading(heading) {
+        if (this.state === 'AIRBORNE') {
+            this.targetHeading = heading;
+            return true;
+        }
+        return false;
+    }
+
+    setAltitude(alt) {
+        if (this.state === 'AIRBORNE') {
+            this.targetAltitude = alt;
+            return true;
+        }
+        return false;
     }
 
     declareEmergency() {
@@ -191,6 +262,8 @@ class Aircraft {
             altitude: this.altitude,
             speed: this.speed,
             heading: this.heading,
+            targetHeading: this.targetHeading,
+            targetAltitude: this.targetAltitude,
             targetRunway: this.targetRunway,
             spawnTime: this.spawnTime,
             actionTime: this.actionTime

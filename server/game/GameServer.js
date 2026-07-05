@@ -1,6 +1,7 @@
 const Aircraft = require('./Aircraft');
 const Runway = require('./Runway');
 const ConflictDetector = require('./ConflictDetector');
+const WeatherSystem = require('./Weather');
 const { v4: uuidv4 } = require('uuid');
 const db = require('../db');
 
@@ -19,6 +20,7 @@ class GameServer {
         this.addRunway('27R', 'Right Runway');
 
         this.conflictDetector = new ConflictDetector(this);
+        this.weather = new WeatherSystem();
 
         // Spawn some initial aircraft for testing
         this.spawnAircraft('ARRIVAL');
@@ -64,6 +66,9 @@ class GameServer {
     }
 
     update() {
+        // Update weather
+        this.weather.update(this.tickRate / 1000);
+
         // Update all aircraft
         this.aircrafts.forEach(aircraft => {
             aircraft.update(this.tickRate / 1000);
@@ -124,6 +129,16 @@ class GameServer {
                 aircraft.declareEmergency();
                 this.log(`ALERT: ${aircraft.callsign} declared EMERGENCY!`);
                 break;
+            case 'CHANGE_HEADING':
+                if (aircraft.setHeading(payload.heading)) {
+                    this.log(`Command: ${aircraft.callsign} turning to heading ${payload.heading}`);
+                }
+                break;
+            case 'CHANGE_ALTITUDE':
+                if (aircraft.setAltitude(payload.altitude)) {
+                    this.log(`Command: ${aircraft.callsign} changing altitude to ${payload.altitude}ft`);
+                }
+                break;
         }
     }
 
@@ -142,6 +157,7 @@ class GameServer {
         return {
             aircrafts: Array.from(this.aircrafts.values()).map(a => a.toJSON()),
             runways: Array.from(this.runways.values()).map(r => r.toJSON()),
+            weather: this.weather.toJSON(),
             logs: this.logs
         };
     }

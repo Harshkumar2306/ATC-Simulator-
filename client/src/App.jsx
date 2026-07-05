@@ -80,7 +80,7 @@ function App() {
 
   // --- CONTROLLER VIEW ---
 
-  const { aircrafts = [], runways = [], logs = [] } = gameState || {};
+  const { aircrafts = [], runways = [], logs = [], weather = null } = gameState || {};
 
   const handleCommand = (type, aircraftId, payload) => {
     socket.emit('command', { type, aircraftId, payload });
@@ -159,7 +159,7 @@ function App() {
             <span className="text-xs font-mono text-emerald-400">SCANNING...</span>
           </div>
 
-          <RadarView aircrafts={aircrafts} runways={runways} />
+          <RadarView aircrafts={aircrafts} runways={runways} weather={weather} />
         </div>
       </main>
     </div>

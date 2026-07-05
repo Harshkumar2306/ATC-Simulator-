@@ -1,16 +1,18 @@
 import React, { useEffect, useRef } from 'react';
 
-const RadarView = ({ aircrafts, runways }) => {
+const RadarView = ({ aircrafts, runways, weather }) => {
     const canvasRef = useRef(null);
 
     const aircraftsRef = useRef(aircrafts);
     const runwaysRef = useRef(runways);
+    const weatherRef = useRef(weather);
 
     // Update refs whenever props change, without restarting the animation loop
     useEffect(() => {
         aircraftsRef.current = aircrafts;
         runwaysRef.current = runways;
-    }, [aircrafts, runways]);
+        weatherRef.current = weather;
+    }, [aircrafts, runways, weather]);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -50,6 +52,42 @@ const RadarView = ({ aircrafts, runways }) => {
             ctx.lineTo(width, centerY);
             ctx.stroke();
             ctx.setLineDash([]); // Reset line dash
+
+            // Draw Weather / Storm Cells
+            if (weatherRef.current && weatherRef.current.storms) {
+                weatherRef.current.storms.forEach(storm => {
+                    const x = centerX + storm.x * scale;
+                    const y = centerY + storm.y * scale;
+                    const r = storm.radius * scale;
+                    
+                    ctx.save();
+                    ctx.translate(x, y);
+                    
+                    const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
+                    
+                    let colorCenter, colorEdge;
+                    if (storm.intensity === 1) { // Light (Green)
+                        colorCenter = 'rgba(34, 197, 94, 0.4)';
+                        colorEdge = 'rgba(34, 197, 94, 0)';
+                    } else if (storm.intensity === 2) { // Heavy (Yellow)
+                        colorCenter = 'rgba(234, 179, 8, 0.5)';
+                        colorEdge = 'rgba(234, 179, 8, 0)';
+                    } else { // Severe (Red)
+                        colorCenter = 'rgba(239, 68, 68, 0.6)';
+                        colorEdge = 'rgba(239, 68, 68, 0)';
+                    }
+                    
+                    gradient.addColorStop(0, colorCenter);
+                    gradient.addColorStop(1, colorEdge);
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, r, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.restore();
+                });
+            }
 
             // Draw Runways
             runwaysRef.current.forEach(runway => {
@@ -168,7 +206,22 @@ const RadarView = ({ aircrafts, runways }) => {
 
     return (
         <div className="relative w-full h-full bg-slate-900 rounded-xl overflow-hidden shadow-2xl border border-slate-800">
-
+            {weather && (
+                <div className="absolute bottom-4 right-4 z-10 flex flex-col items-end gap-1 bg-slate-950/80 backdrop-blur px-3 py-2 rounded border border-slate-700/50 shadow-lg">
+                    <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">SURFACE WIND</div>
+                    <div className="flex items-center gap-2 text-emerald-400 font-mono font-bold">
+                        <span>{weather.windHeading.toString().padStart(3, '0')}°</span>
+                        <span className="text-slate-600">@</span>
+                        <span>{weather.windSpeed}kts</span>
+                        <div 
+                            className="w-5 h-5 border-2 border-emerald-500/50 rounded-full flex items-center justify-center ml-1"
+                            style={{ transform: `rotate(${weather.windHeading}deg)` }}
+                        >
+                            <div className="w-0.5 h-2.5 bg-emerald-400 shadow-[0_0_5px_#34d399] -mt-2 rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+            )}
             <canvas
                 ref={canvasRef}
                 width={800}

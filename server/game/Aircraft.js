@@ -145,14 +145,13 @@ class Aircraft {
 
                 const distToRunway = Math.sqrt(Math.pow(this.targetX - this.x, 2) + Math.pow(this.targetY - this.y, 2));
 
-                // Aggressive descent for landing
-                if (this.altitude > 0) {
-                    this.altitude -= 1500 * dt;
-                }
-                if (this.altitude < 0) this.altitude = 0;
-
                 // Two-phase approach: go to approach fix first, then straight in
                 if (this.landingPhase === 'APPROACH') {
+                    // Descend to intercept altitude (3000ft) before final approach
+                    if (this.altitude > 3000) {
+                        this.altitude -= 1500 * dt;
+                    }
+
                     const dx = this.approachX - this.x;
                     const dy = this.approachY - this.y;
                     const distToApproach = Math.sqrt(dx * dx + dy * dy);
@@ -172,6 +171,16 @@ class Aircraft {
                     }
                 } else {
                     // Final approach: fly directly to runway threshold
+                    
+                    // ILS Glide Slope (Altitude proportional to distance)
+                    const targetGlideAlt = distToRunway * 100;
+                    if (this.altitude > targetGlideAlt) {
+                        this.altitude -= 1500 * dt; // Catch the glide slope
+                    } else {
+                        this.altitude = targetGlideAlt; // Follow the glide slope perfectly
+                    }
+                    if (this.altitude < 0) this.altitude = 0;
+
                     if (distToRunway < 2) {
                         // Over the runway threshold - maintain runway heading to prevent vibrating
                         this.heading = this.runwayHeading;

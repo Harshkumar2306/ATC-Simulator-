@@ -143,34 +143,39 @@ class Aircraft {
             if (this.state === 'LANDING') {
                 if (this.speed > 160) this.speed -= 20 * dt; // Slow down to approach speed
 
-                // Calculate distance to runway threshold
-                const dx = this.targetX - this.x;
-                const dy = this.targetY - this.y;
-                const distToRunway = Math.sqrt(dx * dx + dy * dy);
+                const distToRunway = Math.sqrt(Math.pow(this.targetX - this.x, 2) + Math.pow(this.targetY - this.y, 2));
 
                 // Glide slope descent
                 if (distToRunway < 40) {
-                    // Smoothly descend to 0
                     this.altitude -= 1000 * dt;
                 } else {
                     this.altitude -= 500 * dt;
                 }
                 if (this.altitude < 0) this.altitude = 0;
 
-                // Intercept Localizer vs Final Approach
-                if (distToRunway > 15) {
-                    // Fly towards threshold
-                    const targetAngle = Math.atan2(dy, dx) * (180 / Math.PI);
-                    this.heading = targetAngle;
+                // Two-phase approach: go to approach fix first, then straight in
+                if (this.landingPhase === 'APPROACH') {
+                    const dx = this.approachX - this.x;
+                    const dy = this.approachY - this.y;
+                    const distToApproach = Math.sqrt(dx * dx + dy * dy);
+                    
+                    this.heading = Math.atan2(dy, dx) * (180 / Math.PI);
+                    
+                    // If we get close to the approach fix OR we are close to the runway, switch to final
+                    if (distToApproach < 5 || distToRunway < 15) {
+                        this.landingPhase = 'FINAL';
+                    }
                 } else {
-                    // Final approach, align with runway
-                    this.heading = this.runwayHeading;
+                    // Final approach: fly directly to runway threshold
+                    const dx = this.targetX - this.x;
+                    const dy = this.targetY - this.y;
+                    this.heading = Math.atan2(dy, dx) * (180 / Math.PI);
                 }
 
                 // Touchdown logic
                 if (distToRunway < 2 && this.altitude <= 50) {
                     this.altitude = 0;
-                    this.speed = 60; // Faster Taxi speed (was 20)
+                    this.speed = 60; // Taxi speed
                     this.state = 'TAXIING';
 
                     // Force disappear after ~12 seconds
@@ -222,16 +227,21 @@ class Aircraft {
             this.state = 'LANDING';
             this.actionTime = new Date();
             
-            // Set runway threshold and heading
+            // Set runway threshold, approach fix, and heading
             if (runwayId === '09L') {
                 this.targetX = -10;
                 this.targetY = -2;
                 this.runwayHeading = 90;
+                this.approachX = -45; // Approach fix 35 units out
+                this.approachY = -2;
             } else if (runwayId === '27R') {
                 this.targetX = 10;
                 this.targetY = 6;
                 this.runwayHeading = 270;
+                this.approachX = 45; // Approach fix 35 units out
+                this.approachY = 6;
             }
+            this.landingPhase = 'APPROACH';
             return true;
         }
         return false;

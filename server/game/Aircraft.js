@@ -144,6 +144,14 @@ class Aircraft {
                 if (this.speed > 160) this.speed -= 20 * dt; // Slow down to approach speed
 
                 const distToRunway = Math.sqrt(Math.pow(this.targetX - this.x, 2) + Math.pow(this.targetY - this.y, 2));
+                
+                const dxRunway = this.targetX - this.x;
+                const dyRunway = this.targetY - this.y;
+                let angleToRunway = Math.atan2(dyRunway, dxRunway) * (180 / Math.PI);
+                if (angleToRunway < 0) angleToRunway += 360;
+                let diffRunway = Math.abs(angleToRunway - this.runwayHeading);
+                if (diffRunway > 180) diffRunway = 360 - diffRunway;
+                const passedThreshold = (diffRunway > 90);
 
                 // Two-phase approach: go to approach fix first, then straight in
                 if (this.landingPhase === 'APPROACH') {
@@ -172,27 +180,28 @@ class Aircraft {
                 } else {
                     // Final approach: fly directly to runway threshold
                     
-                    // ILS Glide Slope (Altitude proportional to distance)
-                    const targetGlideAlt = distToRunway * 100;
-                    if (this.altitude > targetGlideAlt) {
-                        this.altitude -= 1500 * dt; // Catch the glide slope
+                    if (passedThreshold) {
+                        this.altitude -= 1500 * dt; // Force down if floating past threshold
                     } else {
-                        this.altitude = targetGlideAlt; // Follow the glide slope perfectly
+                        const targetGlideAlt = distToRunway * 100;
+                        if (this.altitude > targetGlideAlt) {
+                            this.altitude -= 1500 * dt; // Catch the glide slope
+                        } else {
+                            this.altitude = targetGlideAlt; // Follow the glide slope perfectly
+                        }
                     }
                     if (this.altitude < 0) this.altitude = 0;
 
-                    if (distToRunway < 2) {
+                    if (distToRunway < 2 || passedThreshold) {
                         // Over the runway threshold - maintain runway heading to prevent vibrating
                         this.heading = this.runwayHeading;
                     } else {
-                        const dx = this.targetX - this.x;
-                        const dy = this.targetY - this.y;
-                        this.heading = Math.atan2(dy, dx) * (180 / Math.PI);
+                        this.heading = angleToRunway;
                     }
                 }
 
                 // Touchdown logic
-                if (distToRunway < 2 && this.altitude <= 50) {
+                if ((distToRunway < 2 || passedThreshold) && this.altitude <= 50) {
                     this.altitude = 0;
                     this.speed = 60; // Taxi speed
                     this.state = 'TAXIING';

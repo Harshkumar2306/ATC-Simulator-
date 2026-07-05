@@ -87,9 +87,9 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-emerald-500/30">
+    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black text-slate-200 font-sans selection:bg-emerald-500/30">
       {/* Header */}
-      <header className="bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center shadow-lg">
+      <header className="bg-slate-900/80 backdrop-blur-md border-b border-slate-800/80 px-6 py-4 flex justify-between items-center shadow-[0_4px_30px_rgba(0,0,0,0.5)] relative z-20">
         <div className="flex items-center gap-3">
           <div className="bg-emerald-600 p-2 rounded text-white shadow-[0_0_15px_rgba(5,150,105,0.4)]">
             <TowerControl size={24} />
@@ -148,7 +148,7 @@ function App() {
         </div>
 
         {/* Center Panel: Radar View */}
-        <div className="col-span-9 h-full bg-slate-900 rounded-xl border border-slate-800 shadow-2xl overflow-hidden relative group">
+        <div className="col-span-9 h-full bg-slate-900/40 backdrop-blur-xl rounded-xl border border-slate-800/50 shadow-2xl overflow-hidden relative group">
           <div className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-slate-950/80 backdrop-blur px-3 py-1.5 rounded border border-slate-700/50">
             <Radio size={14} className="text-emerald-500 animate-pulse" />
             <span className="text-xs font-mono text-emerald-400 font-bold">RADAR ACTIVE</span>

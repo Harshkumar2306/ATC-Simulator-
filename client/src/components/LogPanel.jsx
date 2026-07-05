@@ -10,7 +10,8 @@ const LogPanel = ({ logs }) => {
     }, [lastLogId]);
 
     return (
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 h-full flex flex-col mt-0">
+        <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800/50 rounded-xl p-4 h-full flex flex-col mt-0 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-slate-600 to-transparent opacity-50"></div>
             <h2 className="text-slate-400 text-sm font-bold uppercase tracking-wider mb-2">Comms Log</h2>
             <div className="flex-1 overflow-y-auto font-mono text-xs space-y-1">
                 {logs.map(log => (

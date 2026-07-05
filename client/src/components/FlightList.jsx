@@ -25,7 +25,7 @@ const FlightList = ({ aircrafts, runways, onCommand }) => {
     }
 
     return (
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 h-full flex flex-col">
+        <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800/50 rounded-xl p-4 h-full flex flex-col shadow-xl">
             <h2 className="text-slate-400 text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
                 <Plane className="w-4 h-4" /> Active Flights
             </h2>
@@ -34,8 +34,8 @@ const FlightList = ({ aircrafts, runways, onCommand }) => {
                 {sorted.map(ac => (
                     <div
                         key={ac.id}
-                        className={`p-3 rounded-lg border flex flex-col gap-2 transition-all ${ac.emergency ? 'bg-red-900/20 border-red-500/50' :
-                            'bg-slate-800/50 border-slate-700 hover:border-slate-600'
+                        className={`p-3 rounded-lg border flex flex-col gap-2 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg ${ac.emergency ? 'bg-red-900/30 border-red-500/60 shadow-[0_0_15px_rgba(239,68,68,0.2)]' :
+                            'bg-slate-800/40 border-slate-700/60 hover:border-slate-500 hover:bg-slate-800/60'
                             }`}
                     >
                         <div className="flex justify-between items-center">
@@ -58,12 +58,12 @@ const FlightList = ({ aircrafts, runways, onCommand }) => {
                                     <button
                                         disabled={!isRunwayFree('09L')}
                                         onClick={() => onCommand('LAND', ac.id, { runwayId: '09L' })}
-                                        className={`text-[10px] px-2 py-1 rounded transition-colors ${isRunwayFree('09L') ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700'}`}
+                                        className={`text-[10px] px-2 py-1 rounded transition-all duration-300 ${isRunwayFree('09L') ? 'bg-emerald-600 hover:bg-emerald-500 text-white hover:shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700'}`}
                                     >LAND 09L</button>
                                     <button
                                         disabled={!isRunwayFree('27R')}
                                         onClick={() => onCommand('LAND', ac.id, { runwayId: '27R' })}
-                                        className={`text-[10px] px-2 py-1 rounded transition-colors ${isRunwayFree('27R') ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700'}`}
+                                        className={`text-[10px] px-2 py-1 rounded transition-all duration-300 ${isRunwayFree('27R') ? 'bg-emerald-600 hover:bg-emerald-500 text-white hover:shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700'}`}
                                     >LAND 27R</button>
                                 </>
                             )}
@@ -72,12 +72,12 @@ const FlightList = ({ aircrafts, runways, onCommand }) => {
                                     <button
                                         disabled={!isRunwayFree('09L')}
                                         onClick={() => onCommand('TAKEOFF', ac.id, { runwayId: '09L' })}
-                                        className={`text-[10px] px-2 py-1 rounded transition-colors ${isRunwayFree('09L') ? 'bg-sky-600 hover:bg-sky-500 text-white' : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700'}`}
+                                        className={`text-[10px] px-2 py-1 rounded transition-all duration-300 ${isRunwayFree('09L') ? 'bg-sky-600 hover:bg-sky-500 text-white hover:shadow-[0_0_10px_rgba(14,165,233,0.5)]' : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700'}`}
                                     >DEP 09L</button>
                                     <button
                                         disabled={!isRunwayFree('27R')}
                                         onClick={() => onCommand('TAKEOFF', ac.id, { runwayId: '27R' })}
-                                        className={`text-[10px] px-2 py-1 rounded transition-colors ${isRunwayFree('27R') ? 'bg-sky-600 hover:bg-sky-500 text-white' : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700'}`}
+                                        className={`text-[10px] px-2 py-1 rounded transition-all duration-300 ${isRunwayFree('27R') ? 'bg-sky-600 hover:bg-sky-500 text-white hover:shadow-[0_0_10px_rgba(14,165,233,0.5)]' : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700'}`}
                                     >DEP 27R</button>
                                 </>
                             )}

@@ -2,7 +2,7 @@ import React from 'react';
 
 const RunwayStatus = ({ runways, aircrafts }) => {
     return (
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-col gap-2">
+        <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800/50 rounded-xl p-3 flex flex-col gap-2 shadow-xl">
             <h2 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-0 flex items-center justify-between">
                 <span>Runway Status</span>
                 <span className="text-[10px] text-slate-600 font-mono">270/12 • 10nm</span>
@@ -15,7 +15,7 @@ const RunwayStatus = ({ runways, aircrafts }) => {
                     const occupantName = occupant ? occupant.callsign : rw.occupiedBy;
 
                     return (
-                        <div key={rw.id} className="bg-slate-800/50 p-1.5 rounded border border-slate-700 flex flex-col justify-between h-full">
+                        <div key={rw.id} className="bg-slate-800/40 backdrop-blur-sm p-1.5 rounded border border-slate-700/60 flex flex-col justify-between h-full hover:border-slate-500 transition-colors">
                             <div className="flex justify-between items-start">
                                 <span className="text-sm font-mono font-bold text-white leading-none">{rw.id}</span>
                                 <div className={`px-1 py-0.5 rounded text-[9px] font-bold uppercase leading-none ${rw.status === 'FREE' ? 'text-emerald-400' : 'text-red-400 animate-pulse'

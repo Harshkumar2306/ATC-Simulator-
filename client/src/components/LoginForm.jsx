@@ -24,7 +24,7 @@ const LoginForm = ({ onLoginSuccess, onGuestLogin }) => {
             } else {
                 setError(data.message || 'Login failed');
             }
-        } catch (err) {
+        } catch {
             setError('Connection error. Please try again.');
         } finally {
             setLoading(false);

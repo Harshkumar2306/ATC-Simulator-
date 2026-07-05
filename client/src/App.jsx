@@ -11,16 +11,15 @@ import { Plane, TowerControl, Radio } from 'lucide-react';
 function App() {
   const [gameState, setGameState] = useState(null);
   const [connected, setConnected] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [viewMode, setViewMode] = useState('login'); // 'login', 'controller', 'passenger'
+  const [viewMode, setViewMode] = useState(() => {
+    return localStorage.getItem('atc_token') ? 'controller' : 'login';
+  });
 
   useEffect(() => {
     // Check localStorage for token
     const token = localStorage.getItem('atc_token');
     if (token) {
       connectSocket(token);
-      setIsAuthenticated(true);
-      setViewMode('controller');
     }
 
     socket.on('connect', () => {
@@ -35,7 +34,6 @@ function App() {
       console.error("Connection Error:", err.message);
       // If auth failed, potential logout
       if (err.message === "Unauthorized") {
-        setIsAuthenticated(false);
         setViewMode('login');
       }
     });
@@ -55,7 +53,6 @@ function App() {
   const handleLoginSuccess = (token) => {
     localStorage.setItem('atc_token', token);
     connectSocket(token);
-    setIsAuthenticated(true);
     setViewMode('controller');
   };
 
@@ -67,7 +64,6 @@ function App() {
   const handleLogout = () => {
     localStorage.removeItem('atc_token');
     socket.disconnect();
-    setIsAuthenticated(false);
     setViewMode('login');
     setGameState(null);
   };

@@ -66,7 +66,7 @@ class Aircraft {
     update(dt) {
         if (this.state === 'FINISHED') return;
 
-        if (this.state === 'AIRBORNE' || this.state === 'LANDING' || this.state === 'TAKEOFF' || this.state === 'TAXIING') {
+        if (this.state === 'AIRBORNE' || this.state === 'LANDING' || this.state === 'TAKEOFF' || this.state === 'TAXIING' || this.state === 'TAXI_OUT') {
             
             if (this.state === 'AIRBORNE' || this.state === 'LANDING') {
                 this.fuel -= dt;
@@ -211,25 +211,61 @@ class Aircraft {
                 }
             }
 
-            // Taxiing Logic
+            // Taxi In Logic (Arrivals)
             if (this.state === 'TAXIING') {
-                const moveSpeed = (this.speed / 100) * 2;
-                const rad = this.heading * (Math.PI / 180);
-                this.x += Math.cos(rad) * moveSpeed * dt;
-                this.y += Math.sin(rad) * moveSpeed * dt;
+                const terminalX = 0;
+                const terminalY = 2; // Center terminal area
+                const dx = terminalX - this.x;
+                const dy = terminalY - this.y;
+                const distToTerminal = Math.sqrt(dx * dx + dy * dy);
 
-                const dist = Math.sqrt(this.x * this.x + this.y * this.y);
-                if (dist < 2) {
+                if (distToTerminal < 1) {
                     this.state = 'PARKED';
+                    this.speed = 0;
                     this.status = 'TAXIED TO GATE';
                     setTimeout(() => { this.state = 'FINISHED'; }, 5000);
+                } else {
+                    // Decelerate to taxi speed and steer to terminal
+                    if (this.speed > 20) this.speed -= 10 * dt;
+                    this.heading = Math.atan2(dy, dx) * (180 / Math.PI);
+                }
+            }
+
+            // Taxi Out Logic (Departures)
+            if (this.state === 'TAXI_OUT') {
+                const dx = this.targetX - this.x;
+                const dy = this.targetY - this.y;
+                const distToRunway = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distToRunway < 1) {
+                    // Reached runway, start takeoff roll
+                    this.state = 'TAKEOFF';
+                    this.heading = this.runwayHeading;
+                    this.speed = 40; 
+                    
+                    // Release runway after 8 seconds of rolling
+                    setTimeout(() => {
+                        if (this.targetRunway) {
+                            const rw = this.gameServer.runways.get(this.targetRunway);
+                            if (rw) rw.release();
+                        }
+                    }, 8000);
+                } else {
+                    // Taxi to runway threshold
+                    this.heading = Math.atan2(dy, dx) * (180 / Math.PI);
                 }
             }
 
             // Takeoff Logic
             if (this.state === 'TAKEOFF') {
-                this.altitude += 250 * dt;
-                this.speed += 30 * dt;
+                // Accelerate down the runway
+                if (this.speed < 250) this.speed += 30 * dt;
+                
+                // Lift off (Vr speed)
+                if (this.speed > 140) {
+                    this.altitude += 500 * dt;
+                }
+
                 const dist = Math.sqrt(this.x * this.x + this.y * this.y);
                 if (dist > 100) {
                     this.state = 'FINISHED';
@@ -249,16 +285,16 @@ class Aircraft {
             // Set runway threshold, approach fix, and heading
             if (runwayId === '09L') {
                 this.targetX = -10;
-                this.targetY = -2;
+                this.targetY = 0;
                 this.runwayHeading = 90;
                 this.approachX = -45; // Approach fix 35 units out
-                this.approachY = -2;
+                this.approachY = 0;
             } else if (runwayId === '27R') {
                 this.targetX = 10;
-                this.targetY = 6;
+                this.targetY = 8;
                 this.runwayHeading = 270;
                 this.approachX = 45; // Approach fix 35 units out
-                this.approachY = 6;
+                this.approachY = 8;
             }
             this.landingPhase = 'APPROACH';
             return true;
@@ -271,13 +307,21 @@ class Aircraft {
         const runway = this.gameServer.runways.get(runwayId);
         if (runway && runway.occupy(this.id)) {
             this.targetRunway = runwayId;
-            this.state = 'TAKEOFF';
+            this.state = 'TAXI_OUT';
             this.actionTime = new Date();
-            this.heading = runwayId.includes('L') ? 90 : 270;
-
-            setTimeout(() => {
-                runway.release();
-            }, 5000);
+            
+            // Set threshold coordinates to taxi to
+            if (runwayId === '09L') {
+                this.targetX = -10;
+                this.targetY = 0;
+                this.runwayHeading = 90;
+            } else if (runwayId === '27R') {
+                this.targetX = 10;
+                this.targetY = 8;
+                this.runwayHeading = 270;
+            }
+            
+            this.speed = 20; // Taxi speed
             return true;
         }
         return false;

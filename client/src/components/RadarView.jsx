@@ -113,10 +113,10 @@ const RadarView = ({ aircrafts, runways, weather, conflicts = [] }) => {
             gradient09.addColorStop(1, 'rgba(16, 185, 129, 0.2)');
             ctx.fillStyle = gradient09;
             ctx.beginPath();
-            ctx.moveTo(-10 * scale, -2 * scale);
-            ctx.lineTo(-50 * scale, -12 * scale);
-            ctx.lineTo(-50 * scale, 8 * scale);
-            ctx.lineTo(-10 * scale, 2 * scale);
+            ctx.moveTo(-10 * scale, 0);
+            ctx.lineTo(-50 * scale, -15 * scale);
+            ctx.lineTo(-50 * scale, 15 * scale);
+            ctx.closePath();
             ctx.fill();
 
             // ILS 27R (Approaching from East, pointing West)
@@ -125,10 +125,10 @@ const RadarView = ({ aircrafts, runways, weather, conflicts = [] }) => {
             gradient27.addColorStop(1, 'rgba(16, 185, 129, 0.2)');
             ctx.fillStyle = gradient27;
             ctx.beginPath();
-            ctx.moveTo(10 * scale, 6 * scale);
-            ctx.lineTo(50 * scale, -4 * scale);
-            ctx.lineTo(50 * scale, 16 * scale);
-            ctx.lineTo(10 * scale, 10 * scale);
+            ctx.moveTo(10 * scale, 8 * scale);
+            ctx.lineTo(50 * scale, -7 * scale);
+            ctx.lineTo(50 * scale, 23 * scale);
+            ctx.closePath();
             ctx.fill();
             ctx.restore();
 

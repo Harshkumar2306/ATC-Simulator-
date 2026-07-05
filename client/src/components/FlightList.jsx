@@ -5,6 +5,7 @@ const FlightList = ({ aircrafts, runways, conflicts = [], onCommand }) => {
     const stateWeights = {
         'LANDING': 4,
         'TAKEOFF': 3,
+        'TAXI_OUT': 2.5,
         'AIRBORNE': 2,
         'TAXIING': 1,
         'PARKED': 0,
@@ -143,6 +144,7 @@ const getStateColor = (state) => {
     switch (state) {
         case 'LANDING': return 'text-emerald-400';
         case 'TAKEOFF': return 'text-sky-400';
+        case 'TAXI_OUT': return 'text-sky-200';
         case 'EMERGENCY': return 'text-red-500 animate-pulse';
         case 'HOLD': return 'text-amber-400';
         default: return 'text-slate-400';

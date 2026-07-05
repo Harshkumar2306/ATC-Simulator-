@@ -70,9 +70,21 @@ class Aircraft {
             
             if (this.state === 'AIRBORNE' || this.state === 'LANDING') {
                 this.fuel -= dt;
-                if (this.fuel < 60 && !this.emergency) {
+                if (this.fuel < 60 && !this.emergency && this.fuel > 0) {
                     this.gameServer.log(`BINGO FUEL: ${this.callsign} has critical fuel levels! MAYDAY declared.`);
                     this.declareEmergency();
+                }
+
+                if (this.fuel <= 0) {
+                    this.altitude -= 3000 * dt; // Rapid descent (falling)
+                    if (this.altitude <= 0) {
+                        this.altitude = 0;
+                        this.speed = 0;
+                        this.state = 'FINISHED';
+                        this.status = 'CRASHED';
+                        this.gameServer.log(`CRITICAL: ${this.callsign} HAS CRASHED DUE TO FUEL EXHAUSTION!`);
+                        return; // Stop processing this frame
+                    }
                 }
 
                 // Apply Wind Drift
@@ -114,7 +126,7 @@ class Aircraft {
             }
 
             // Target Altitude Adjustment
-            if (this.targetAltitude !== null && this.state === 'AIRBORNE') {
+            if (this.targetAltitude !== null && this.state === 'AIRBORNE' && this.fuel > 0) {
                 if (Math.abs(this.altitude - this.targetAltitude) < 50) {
                     this.altitude = this.targetAltitude;
                 } else if (this.altitude < this.targetAltitude) {
@@ -274,10 +286,15 @@ class Aircraft {
                 if (this.speed > 140) {
                     this.altitude += 500 * dt;
                 }
-
-                const dist = Math.sqrt(this.x * this.x + this.y * this.y);
-                if (dist > 100) {
-                    this.state = 'FINISHED';
+            }
+            
+            // Global Garbage Collection for Out of Bounds (Ghost Planes)
+            const distFromCenter = Math.sqrt(this.x * this.x + this.y * this.y);
+            if (distFromCenter > 120 && this.state !== 'FINISHED') {
+                this.state = 'FINISHED';
+                if (this.type === 'ARRIVAL') {
+                    this.status = 'DIVERTED/LOST';
+                    this.gameServer.log(`LOST RADAR CONTACT: ${this.callsign} has left the airspace.`);
                 }
             }
         }

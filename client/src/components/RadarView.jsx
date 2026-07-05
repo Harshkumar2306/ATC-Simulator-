@@ -6,6 +6,7 @@ const RadarView = ({ aircrafts, runways, weather }) => {
     const aircraftsRef = useRef(aircrafts);
     const runwaysRef = useRef(runways);
     const weatherRef = useRef(weather);
+    const historyMap = useRef(new Map());
 
     // Update refs whenever props change, without restarting the animation loop
     useEffect(() => {
@@ -53,6 +54,17 @@ const RadarView = ({ aircrafts, runways, weather }) => {
             ctx.stroke();
             ctx.setLineDash([]); // Reset line dash
 
+            // Compass Markers
+            ctx.fillStyle = 'rgba(148, 163, 184, 0.5)'; // Slate 400
+            ctx.font = '12px "Space Mono", monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('N', centerX, centerY - 105 * scale);
+            ctx.fillText('S', centerX, centerY + 105 * scale);
+            ctx.fillText('E', centerX + 105 * scale, centerY);
+            ctx.fillText('W', centerX - 105 * scale, centerY);
+            ctx.textAlign = 'left'; // Reset
+
             // Draw Weather / Storm Cells
             if (weatherRef.current && weatherRef.current.storms) {
                 weatherRef.current.storms.forEach(storm => {
@@ -89,6 +101,35 @@ const RadarView = ({ aircrafts, runways, weather }) => {
                 });
             }
 
+            // ILS Approach Cones for runways
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            
+            // ILS 09L (Approaching from West, pointing East)
+            const gradient09 = ctx.createLinearGradient(-50 * scale, 0, -10 * scale, 0);
+            gradient09.addColorStop(0, 'rgba(16, 185, 129, 0)');
+            gradient09.addColorStop(1, 'rgba(16, 185, 129, 0.2)');
+            ctx.fillStyle = gradient09;
+            ctx.beginPath();
+            ctx.moveTo(-10 * scale, -2 * scale);
+            ctx.lineTo(-50 * scale, -12 * scale);
+            ctx.lineTo(-50 * scale, 8 * scale);
+            ctx.lineTo(-10 * scale, 2 * scale);
+            ctx.fill();
+
+            // ILS 27R (Approaching from East, pointing West)
+            const gradient27 = ctx.createLinearGradient(50 * scale, 8 * scale, 10 * scale, 8 * scale);
+            gradient27.addColorStop(0, 'rgba(16, 185, 129, 0)');
+            gradient27.addColorStop(1, 'rgba(16, 185, 129, 0.2)');
+            ctx.fillStyle = gradient27;
+            ctx.beginPath();
+            ctx.moveTo(10 * scale, 6 * scale);
+            ctx.lineTo(50 * scale, -4 * scale);
+            ctx.lineTo(50 * scale, 16 * scale);
+            ctx.lineTo(10 * scale, 10 * scale);
+            ctx.fill();
+            ctx.restore();
+
             // Draw Runways
             runwaysRef.current.forEach(runway => {
                 ctx.save();
@@ -108,6 +149,12 @@ const RadarView = ({ aircrafts, runways, weather }) => {
                 ctx.restore();
             });
 
+            // Maintain history for breadcrumbs
+            const currentIds = new Set(aircraftsRef.current.map(a => a.id));
+            for (const id of historyMap.current.keys()) {
+                if (!currentIds.has(id)) historyMap.current.delete(id);
+            }
+
             // Draw Aircraft
             aircraftsRef.current.forEach(ac => {
                 if (ac.state === 'FINISHED') return;
@@ -115,30 +162,55 @@ const RadarView = ({ aircrafts, runways, weather }) => {
                 const x = centerX + ac.x * scale;
                 const y = centerY + ac.y * scale;
 
-                ctx.save();
-                ctx.translate(x, y);
+                // Update history map (store points every 1 second)
+                if (!historyMap.current.has(ac.id)) historyMap.current.set(ac.id, []);
+                const history = historyMap.current.get(ac.id);
+                const now = Date.now();
+                if (history.length === 0 || now - history[history.length - 1].time > 1000) {
+                    history.push({ x: ac.x * scale, y: ac.y * scale, time: now });
+                    if (history.length > 5) history.shift(); // Keep last 5 points
+                }
 
-                // Icon color based on status
+                // Determine Colors
                 let color, glowColor;
                 if (ac.emergency) {
                     color = '#ef4444'; // Red
                     glowColor = 'rgba(239, 68, 68, 0.8)';
-                }
-                else if (ac.type === 'ARRIVAL') {
+                } else if (ac.type === 'ARRIVAL') {
                     color = '#34d399'; // Emerald
                     glowColor = 'rgba(52, 211, 153, 0.8)';
-                }
-                else {
+                } else {
                     color = '#60a5fa'; // Blue
                     glowColor = 'rgba(96, 165, 250, 0.8)';
                 }
 
+                // Draw Breadcrumbs
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                history.forEach((pt, i) => {
+                    const alpha = (i + 1) / (history.length + 1); // Older points are more transparent
+                    ctx.fillStyle = color;
+                    ctx.globalAlpha = alpha * 0.6;
+                    ctx.beginPath();
+                    ctx.arc(pt.x, pt.y, 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                ctx.restore();
+
+                ctx.save();
+                ctx.translate(x, y);
+
+                // Altitude scaling for 3D effect (0 to 30000ft maps to scale 0.6x to 1.5x)
+                const altRatio = Math.max(0, Math.min(1, ac.altitude / 30000));
+                const dotScale = 0.6 + (altRatio * 0.9);
+                const shadowRadius = 2 + (altRatio * 15);
+
                 // Draw glowing dot
-                ctx.shadowBlur = 10;
+                ctx.shadowBlur = shadowRadius;
                 ctx.shadowColor = glowColor;
                 ctx.fillStyle = color;
                 ctx.beginPath();
-                ctx.arc(0, 0, 3.5, 0, Math.PI * 2);
+                ctx.arc(0, 0, 3.5 * dotScale, 0, Math.PI * 2);
                 ctx.fill();
 
                 // Draw vector line based on heading

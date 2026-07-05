@@ -145,11 +145,9 @@ class Aircraft {
 
                 const distToRunway = Math.sqrt(Math.pow(this.targetX - this.x, 2) + Math.pow(this.targetY - this.y, 2));
 
-                // Glide slope descent
-                if (distToRunway < 40) {
-                    this.altitude -= 1000 * dt;
-                } else {
-                    this.altitude -= 500 * dt;
+                // Aggressive descent for landing
+                if (this.altitude > 0) {
+                    this.altitude -= 1500 * dt;
                 }
                 if (this.altitude < 0) this.altitude = 0;
 
@@ -159,17 +157,29 @@ class Aircraft {
                     const dy = this.approachY - this.y;
                     const distToApproach = Math.sqrt(dx * dx + dy * dy);
                     
-                    this.heading = Math.atan2(dy, dx) * (180 / Math.PI);
-                    
-                    // If we get close to the approach fix OR we are close to the runway, switch to final
-                    if (distToApproach < 5 || distToRunway < 15) {
-                        this.landingPhase = 'FINAL';
+                    // If we reach the approach fix, check altitude
+                    if (distToApproach < 5) {
+                        if (this.altitude <= 4000) {
+                            // Low enough to begin final approach
+                            this.landingPhase = 'FINAL';
+                        } else {
+                            // Too high! Orbit in a holding pattern to lose altitude
+                            this.heading += 45 * dt;
+                        }
+                    } else {
+                        // Fly to approach fix
+                        this.heading = Math.atan2(dy, dx) * (180 / Math.PI);
                     }
                 } else {
                     // Final approach: fly directly to runway threshold
-                    const dx = this.targetX - this.x;
-                    const dy = this.targetY - this.y;
-                    this.heading = Math.atan2(dy, dx) * (180 / Math.PI);
+                    if (distToRunway < 2) {
+                        // Over the runway threshold - maintain runway heading to prevent vibrating
+                        this.heading = this.runwayHeading;
+                    } else {
+                        const dx = this.targetX - this.x;
+                        const dy = this.targetY - this.y;
+                        this.heading = Math.atan2(dy, dx) * (180 / Math.PI);
+                    }
                 }
 
                 // Touchdown logic

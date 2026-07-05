@@ -47,7 +47,7 @@ const FlightList = ({ aircrafts, runways, conflicts = [], onCommand }) => {
                     return (
                     <div
                         key={ac.id}
-                        className={`p-3 rounded-lg border flex flex-col gap-2 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg ${cardStyle}`}
+                        className={`p-3 rounded-lg border flex flex-col gap-2 transition-colors duration-300 ${cardStyle}`}
                     >
                         <div className="flex justify-between items-center">
                             <span className={`font-mono font-bold ${ac.emergency ? 'text-red-400' : 'text-slate-200'}`}>

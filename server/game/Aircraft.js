@@ -312,13 +312,13 @@ class Aircraft {
             if (runwayId === '09L') {
                 this.targetX = -10;
                 this.targetY = 0;
-                this.runwayHeading = 90;
+                this.runwayHeading = 0;
                 this.approachX = -45; // Approach fix 35 units out
                 this.approachY = 0;
             } else if (runwayId === '27R') {
                 this.targetX = 10;
                 this.targetY = 8;
-                this.runwayHeading = 270;
+                this.runwayHeading = 180;
                 this.approachX = 45; // Approach fix 35 units out
                 this.approachY = 8;
             }
@@ -340,11 +340,11 @@ class Aircraft {
             if (runwayId === '09L') {
                 this.targetX = -10;
                 this.targetY = 0;
-                this.runwayHeading = 90;
+                this.runwayHeading = 0;
             } else if (runwayId === '27R') {
                 this.targetX = 10;
                 this.targetY = 8;
-                this.runwayHeading = 270;
+                this.runwayHeading = 180;
             }
             
             this.speed = 20; // Taxi speed

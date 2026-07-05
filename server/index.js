@@ -38,10 +38,12 @@ app.get('/export', (req, res) => {
         { id: 'spawnTime', title: 'Start Time' },
         { id: 'callsign', title: 'Flight' },
         { id: 'type', title: 'Type' },
+        { id: 'squawk', title: 'Squawk' },
         { id: 'state', title: 'Final Phase' },
         { id: 'actionTime', title: 'Action Time' },
         { id: 'altitude', title: 'Altitude (ft)' },
         { id: 'speed', title: 'Speed (kts)' },
+        { id: 'fuel', title: 'Fuel (s)' },
         { id: 'targetRunway', title: 'Runway' }
     ];
 
@@ -54,7 +56,7 @@ app.get('/export', (req, res) => {
             // Format Dates
             if (['spawnTime', 'actionTime'].includes(col.id)) {
                 if (val) {
-                    val = new Date(val).toLocaleTimeString();
+                    val = new Date(val).toISOString(); // ISO for better Excel parsing
                 } else {
                     val = '-';
                 }
@@ -62,7 +64,7 @@ app.get('/export', (req, res) => {
 
             // Format numbers
             if (typeof val === 'number') {
-                if (['speed', 'heading', 'altitude'].includes(col.id)) {
+                if (['speed', 'heading', 'altitude', 'fuel'].includes(col.id)) {
                     val = Math.round(val);
                 }
             }
@@ -85,62 +87,147 @@ app.get('/export/pdf', (req, res) => {
     const active = Array.from(game.aircrafts.values());
     const completed = game.completedFlights || [];
     const allFlights = [...active, ...completed];
-
+    
     allFlights.sort((a, b) => b.spawnTime - a.spawnTime);
 
-    const doc = new PDFDocument({ layout: 'landscape' }); // Landscape for more columns
+    // Calculate stats
+    const totalFlights = allFlights.length;
+    const totalArrivals = allFlights.filter(a => a.type === 'ARRIVAL').length;
+    const totalDepartures = allFlights.filter(a => a.type === 'DEPARTURE').length;
+
+    const doc = new PDFDocument({ layout: 'landscape', margin: 50, bufferPages: true });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="atc_full_report.pdf"');
     doc.pipe(res);
 
-    doc.fontSize(20).text('ATC FULL REPORT', { align: 'center' });
+    // Corporate Header
+    doc.font('Helvetica-Bold').fontSize(24).fillColor('#1e293b').text('ATC SIMULATOR COMMAND CENTER', { align: 'center' });
+    doc.fontSize(14).fillColor('#64748b').text('OFFICIAL LOG REPORT', { align: 'center' });
+    doc.moveDown(0.5);
+    
+    // Line separator
+    doc.moveTo(50, doc.y).lineTo(742, doc.y).strokeColor('#cbd5e1').lineWidth(2).stroke();
     doc.moveDown();
+
+    // Summary Box
+    doc.rect(50, doc.y, 692, 40).fillAndStroke('#f8fafc', '#e2e8f0');
+    doc.fillColor('#334155').fontSize(11).font('Helvetica-Bold');
+    const boxY = doc.y + 14;
+    doc.text(`Total Flights: ${totalFlights}`, 70, boxY);
+    doc.font('Helvetica').text(`Active: ${active.length}  |  Completed: ${completed.length}`, 220, boxY);
+    doc.text(`Arrivals: ${totalArrivals}  |  Departures: ${totalDepartures}`, 420, boxY);
     const dateStr = new Date().toLocaleString();
-    doc.fontSize(12).text(`Generated: ${dateStr}`, { align: 'center' });
-    doc.moveDown();
+    doc.text(`Generated: ${dateStr}`, 600, boxY);
+    doc.moveDown(3);
 
-    doc.fontSize(10).text(`Active: ${active.length} | Completed: ${completed.length}`, { align: 'center' });
-    doc.moveDown();
+    // Table Setup
+    let y = doc.y;
+    
+    // Columns
+    const cols = {
+        time: 60,
+        callsign: 130,
+        squawk: 200,
+        type: 260,
+        state: 340,
+        alt: 430,
+        spd: 500,
+        fuel: 560,
+        rwy: 620,
+        action: 680
+    };
 
-    // Simple table layout
-    let y = 180;
-    doc.font('Helvetica-Bold').fontSize(10);
+    const drawHeader = (startY) => {
+        doc.rect(50, startY, 692, 25).fill('#0f172a');
+        doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(10);
+        const textY = startY + 8;
+        doc.text('Start Time', cols.time, textY);
+        doc.text('Flight', cols.callsign, textY);
+        doc.text('Squawk', cols.squawk, textY);
+        doc.text('Type', cols.type, textY);
+        doc.text('Status', cols.state, textY);
+        doc.text('Alt (ft)', cols.alt, textY);
+        doc.text('Spd (kts)', cols.spd, textY);
+        doc.text('Fuel (s)', cols.fuel, textY);
+        doc.text('Rwy', cols.rwy, textY);
+        doc.text('Action Time', cols.action, textY);
+    };
 
-    // Header
-    doc.text('Start Time', 50, y);
-    doc.text('Flight', 150, y);
-    doc.text('Type', 210, y);
-    doc.text('Final Phase', 290, y);
-    doc.text('Action Time', 370, y);
-    doc.text('Alt', 450, y);
-    doc.text('Spd', 510, y);
-    doc.text('Rwy', 560, y);
+    drawHeader(y);
+    y += 25;
 
-    y += 20;
-    doc.moveTo(50, y).lineTo(600, y).stroke();
-    y += 10;
-
-    doc.font('Helvetica').fontSize(10);
-
-    allFlights.forEach(ac => {
+    // Table Rows
+    doc.font('Helvetica').fontSize(9);
+    
+    allFlights.forEach((ac, index) => {
+        // Page break logic
         if (y > 500) {
-            doc.addPage();
+            doc.addPage({ layout: 'landscape', margin: 50 });
             y = 50;
+            drawHeader(y);
+            y += 25;
+            doc.font('Helvetica').fontSize(9);
         }
+
+        // Zebra striping
+        if (index % 2 === 0) {
+            doc.rect(50, y, 692, 20).fill('#f8fafc');
+        } else {
+            doc.rect(50, y, 692, 20).fill('#ffffff');
+        }
+
+        const textY = y + 5;
 
         const spawnTime = ac.spawnTime ? new Date(ac.spawnTime).toLocaleTimeString() : '-';
         const actionTime = ac.actionTime ? new Date(ac.actionTime).toLocaleTimeString() : '-';
 
-        doc.text(spawnTime, 50, y);
-        doc.text(ac.callsign, 150, y);
-        doc.text(ac.type, 210, y);
-        doc.text(ac.state, 290, y);
-        doc.text(actionTime, 370, y);
-        doc.text(Math.round(ac.altitude || 0).toString(), 450, y);
-        doc.text(Math.round(ac.speed || 0).toString(), 510, y);
-        doc.text(ac.targetRunway || '-', 560, y);
+        doc.fillColor('#64748b').font('Helvetica');
+        doc.text(spawnTime, cols.time, textY);
+        
+        // Emphasize emergency
+        if (ac.emergency || ac.status === 'CRASHED') {
+            doc.fillColor('#dc2626').font('Helvetica-Bold');
+        } else {
+            doc.fillColor('#0f172a').font('Helvetica-Bold');
+        }
+        doc.text(ac.callsign, cols.callsign, textY);
+        
+        doc.fillColor('#64748b').font('Helvetica');
+        doc.text(ac.squawk || '-', cols.squawk, textY);
+        
+        doc.fillColor('#334155');
+        doc.text(ac.type, cols.type, textY);
+        
+        // Color code status
+        if (ac.state === 'FINISHED') doc.fillColor('#10b981').font('Helvetica-Bold');
+        else doc.fillColor('#0284c7').font('Helvetica-Bold');
+        doc.text(ac.status || ac.state, cols.state, textY);
+        
+        doc.fillColor('#475569').font('Helvetica');
+        doc.text(Math.round(ac.altitude || 0).toString(), cols.alt, textY);
+        doc.text(Math.round(ac.speed || 0).toString(), cols.spd, textY);
+        
+        if (ac.fuel < 100) doc.fillColor('#dc2626').font('Helvetica-Bold');
+        else doc.fillColor('#475569').font('Helvetica');
+        doc.text(Math.round(ac.fuel || 0).toString(), cols.fuel, textY);
+        
+        doc.fillColor('#334155').font('Helvetica');
+        doc.text(ac.targetRunway || '-', cols.rwy, textY);
+        
+        doc.fillColor('#94a3b8');
+        doc.text(actionTime, cols.action, textY);
+
         y += 20;
     });
+
+    // Add footers with page numbers
+    const range = doc.bufferedPageRange();
+    for (let i = range.start; i < range.start + range.count; i++) {
+        doc.switchToPage(i);
+        doc.rect(50, 560, 692, 1).fill('#e2e8f0');
+        doc.font('Helvetica').fontSize(8).fillColor('#94a3b8');
+        doc.text(`Page ${i + 1} of ${range.count}`, 50, 570, { align: 'center' });
+    }
 
     doc.end();
 });

@@ -15,6 +15,9 @@ class Aircraft {
         this.state = type === 'ARRIVAL' ? 'AIRBORNE' : 'PARKED';
         this.emergency = false;
 
+        const wcs = ['L', 'M', 'H']; // Light, Medium, Heavy
+        this.wakeCategory = wcs[Math.floor(Math.random() * wcs.length)];
+
         // Physics
         this.x = 0;
         this.y = 0;
@@ -138,28 +141,45 @@ class Aircraft {
 
             // Landing Logic
             if (this.state === 'LANDING') {
-                this.altitude -= 800 * dt; // Rapid descent
-                this.speed -= 1 * dt;
+                if (this.speed > 160) this.speed -= 20 * dt; // Slow down to approach speed
 
-                if (this.speed < 300) this.speed = 300; // High approach speed
+                // Calculate distance to runway threshold
+                const dx = this.targetX - this.x;
+                const dy = this.targetY - this.y;
+                const distToRunway = Math.sqrt(dx * dx + dy * dy);
 
-                const targetAngle = Math.atan2(-this.y, -this.x) * (180 / Math.PI);
-                this.heading = targetAngle;
+                // Glide slope descent
+                if (distToRunway < 40) {
+                    // Smoothly descend to 0
+                    this.altitude -= 1000 * dt;
+                } else {
+                    this.altitude -= 500 * dt;
+                }
+                if (this.altitude < 0) this.altitude = 0;
+
+                // Intercept Localizer vs Final Approach
+                if (distToRunway > 15) {
+                    // Fly towards threshold
+                    const targetAngle = Math.atan2(dy, dx) * (180 / Math.PI);
+                    this.heading = targetAngle;
+                } else {
+                    // Final approach, align with runway
+                    this.heading = this.runwayHeading;
+                }
+
                 // Touchdown logic
-                if (this.altitude <= 0) {
+                if (distToRunway < 2 && this.altitude <= 50) {
                     this.altitude = 0;
                     this.speed = 60; // Faster Taxi speed (was 20)
                     this.state = 'TAXIING';
 
-                    // Force disappear after ~12 seconds (User requirement: 10-15s)
+                    // Force disappear after ~12 seconds
                     setTimeout(() => {
-                        // Only finish if still taxiing (not already parked/finished)
                         if (this.state === 'TAXIING' || this.state === 'PARKED') {
                             this.state = 'FINISHED';
                         }
                     }, 12000);
 
-                    // Release runway as we are now taxiing off
                     if (this.targetRunway) {
                         const rw = this.gameServer.runways.get(this.targetRunway);
                         if (rw) rw.release();
@@ -201,6 +221,17 @@ class Aircraft {
             this.targetRunway = runwayId;
             this.state = 'LANDING';
             this.actionTime = new Date();
+            
+            // Set runway threshold and heading
+            if (runwayId === '09L') {
+                this.targetX = -10;
+                this.targetY = -2;
+                this.runwayHeading = 90;
+            } else if (runwayId === '27R') {
+                this.targetX = 10;
+                this.targetY = 6;
+                this.runwayHeading = 270;
+            }
             return true;
         }
         return false;
@@ -276,7 +307,8 @@ class Aircraft {
             spawnTime: this.spawnTime,
             actionTime: this.actionTime,
             squawk: this.squawk,
-            fuel: this.fuel
+            fuel: this.fuel,
+            wakeCategory: this.wakeCategory
         };
     }
 }

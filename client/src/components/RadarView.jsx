@@ -192,15 +192,17 @@ const RadarView = ({ aircrafts, runways, weather, conflicts = [] }) => {
                     glowColor = 'rgba(96, 165, 250, 0.8)';
                 }
 
-                // Draw Breadcrumbs
+                // Phosphor Trail (Breadcrumbs)
                 ctx.save();
                 ctx.translate(centerX, centerY);
                 history.forEach((pt, i) => {
-                    const alpha = (i + 1) / (history.length + 1); // Older points are more transparent
+                    const alpha = Math.pow((i + 1) / (history.length + 1), 2); // Exponential phosphor decay
                     ctx.fillStyle = color;
-                    ctx.globalAlpha = alpha * 0.6;
+                    ctx.shadowBlur = 4;
+                    ctx.shadowColor = color;
+                    ctx.globalAlpha = alpha * 0.8;
                     ctx.beginPath();
-                    ctx.arc(pt.x, pt.y, 1.5, 0, Math.PI * 2);
+                    ctx.arc(pt.x, pt.y, 1.2, 0, Math.PI * 2);
                     ctx.fill();
                 });
                 ctx.restore();
@@ -221,35 +223,59 @@ const RadarView = ({ aircrafts, runways, weather, conflicts = [] }) => {
                 ctx.arc(0, 0, 3.5 * dotScale, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Draw vector line based on heading
+                // Speed Vector Trend Line (Predicts position in 60 seconds)
                 ctx.shadowBlur = 0;
                 ctx.strokeStyle = color;
-                ctx.lineWidth = 1.5;
+                ctx.lineWidth = 1.0;
+                ctx.globalAlpha = 0.5;
                 ctx.beginPath();
                 ctx.moveTo(0, 0);
-                // Adjust for canvas rotation (0 is right/east)
                 const rad = ac.heading * (Math.PI / 180);
-                const vectorLen = (Math.max(ac.speed, 50) / 100) * 6; // line length based on speed
-                ctx.lineTo(Math.cos(rad) * vectorLen, Math.sin(rad) * vectorLen);
+                // moveSpeed = (speed / 100) * 2; prediction over 60 seconds (1 minute trend line)
+                const trendLen = (ac.speed / 100) * 2 * 60 * scale / 100; 
+                ctx.lineTo(Math.cos(rad) * trendLen, Math.sin(rad) * trendLen);
                 ctx.stroke();
+                ctx.globalAlpha = 1.0;
                 
                 ctx.restore();
 
-                // Draw Label (Callsign, Altitude, Speed) with background for readability
-                ctx.fillStyle = 'rgba(15, 23, 42, 0.7)'; // Dark bg for label
-                ctx.fillRect(x + 6, y - 16, 75, 32);
+                // Draw Data Block and Leader Line
+                const lblX = x + 15;
+                const lblY = y - 25;
+
+                // Leader Line
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + 10, y - 10);
+                ctx.lineTo(lblX, y - 10);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1.0;
+                ctx.globalAlpha = 0.6;
+                ctx.stroke();
+                ctx.globalAlpha = 1.0;
+
+                // Data Block Background
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.85)'; // Darker bg for Data Block
+                ctx.fillRect(lblX, lblY, 80, 42);
+                ctx.strokeStyle = 'rgba(51, 65, 85, 0.5)'; // subtle border
+                ctx.strokeRect(lblX, lblY, 80, 42);
 
                 ctx.fillStyle = color;
-                ctx.font = 'bold 11px "Space Mono", monospace';
-                ctx.fillText(ac.callsign, x + 8, y - 6);
+                ctx.font = 'bold 10px "Space Mono", monospace';
+                ctx.fillText(ac.callsign, lblX + 4, lblY + 12);
                 
-                ctx.fillStyle = '#64748b'; // Slate 500 for Squawk
-                ctx.fillText(`[${ac.squawk}]`, x + 48, y - 6);
-
+                ctx.fillStyle = '#94a3b8'; // Slate 400 for Wake Category & Squawk
                 ctx.font = '10px "Space Mono", monospace';
+                ctx.fillText(`${ac.type.charAt(0)}/${ac.wakeCategory || 'M'}`, lblX + 50, lblY + 12);
+
                 ctx.fillStyle = '#cbd5e1'; 
-                ctx.fillText(`${Math.floor(ac.altitude)}ft`, x + 8, y + 4);
-                ctx.fillText(`${Math.floor(ac.speed)}kts`, x + 8, y + 14);
+                ctx.fillText(`${Math.floor(ac.altitude).toString().padStart(5, '0')}`, lblX + 4, lblY + 24);
+                ctx.fillText(`[${ac.squawk}]`, lblX + 48, lblY + 24);
+
+                // Line 3: Speed & Fuel
+                ctx.fillText(`${Math.floor(ac.speed).toString().padStart(3, '0')}kts`, lblX + 4, lblY + 36);
+                ctx.fillStyle = ac.fuel < 100 ? '#ef4444' : '#64748b';
+                ctx.fillText(`F${Math.floor(ac.fuel)}`, lblX + 50, lblY + 36);
             });
 
             // Radar Sweep Effect (Visual only)

@@ -25,6 +25,8 @@ class Aircraft {
         this.targetRunway = null;
         this.targetHeading = null;
         this.targetAltitude = null;
+        this.squawk = Math.floor(Math.random() * 7000 + 1000).toString(); // Generates 1000-7999
+        this.fuel = type === 'ARRIVAL' ? 300 : 800; // 5 mins for arrivals, 13 mins for departures
 
         this.initializePosition();
     }
@@ -64,6 +66,12 @@ class Aircraft {
         if (this.state === 'AIRBORNE' || this.state === 'LANDING' || this.state === 'TAKEOFF' || this.state === 'TAXIING') {
             
             if (this.state === 'AIRBORNE' || this.state === 'LANDING') {
+                this.fuel -= dt;
+                if (this.fuel < 60 && !this.emergency) {
+                    this.gameServer.log(`BINGO FUEL: ${this.callsign} has critical fuel levels! MAYDAY declared.`);
+                    this.declareEmergency();
+                }
+
                 // Apply Wind Drift
                 if (this.gameServer && this.gameServer.weather) {
                     const wind = this.gameServer.weather.getWindVector();
@@ -266,7 +274,9 @@ class Aircraft {
             targetAltitude: this.targetAltitude,
             targetRunway: this.targetRunway,
             spawnTime: this.spawnTime,
-            actionTime: this.actionTime
+            actionTime: this.actionTime,
+            squawk: this.squawk,
+            fuel: this.fuel
         };
     }
 }

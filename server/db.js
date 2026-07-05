@@ -1,118 +1,53 @@
-const { Pool } = require('pg');
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+const mongoose = require('mongoose');
+require('dotenv').config();
 
-const isPostgres = !!process.env.DATABASE_URL;
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/atc_simulator';
 
-let pgPool;
-let sqliteDb;
+mongoose.connect(MONGO_URI)
+    .then(() => console.log('Connected to MongoDB (MERN Stack Active)'))
+    .catch(err => console.error('MongoDB connection error:', err));
 
-if (isPostgres) {
-    pgPool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: false } // Required for Render Postgres
-    });
-    console.log('Connected to PostgreSQL database.');
-    initDb();
-} else {
-    const dbPath = path.resolve(__dirname, 'atc_data.db');
-    sqliteDb = new sqlite3.Database(dbPath, (err) => {
-        if (err) {
-            console.error('Error opening database ' + dbPath + ': ' + err.message);
-        } else {
-            console.log('Connected to the SQLite database.');
-            initDb();
-        }
-    });
-}
+const flightLogSchema = new mongoose.Schema({
+    timestamp: { type: Date, default: Date.now },
+    aircraft_id: String,
+    callsign: String,
+    type: String,
+    state: String,
+    altitude: Number,
+    speed: Number,
+    heading: Number,
+    x: Number,
+    y: Number,
+    target_runway: String,
+    squawk: String,
+    fuel: Number
+});
 
-function initDb() {
-    if (isPostgres) {
-        pgPool.query(`CREATE TABLE IF NOT EXISTS flight_logs (
-            id SERIAL PRIMARY KEY,
-            timestamp TEXT,
-            aircraft_id TEXT,
-            callsign TEXT,
-            type TEXT,
-            state TEXT,
-            altitude REAL,
-            speed REAL,
-            heading REAL,
-            x REAL,
-            y REAL,
-            target_runway TEXT
-        )`, (err) => {
-            if (err) console.error('Error creating PG table:', err);
-            else console.log('PG Flight Logs table ready.');
-        });
-    } else {
-        sqliteDb.run(`CREATE TABLE IF NOT EXISTS flight_logs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp TEXT,
-            aircraft_id TEXT,
-            callsign TEXT,
-            type TEXT,
-            state TEXT,
-            altitude REAL,
-            speed REAL,
-            heading REAL,
-            x REAL,
-            y REAL,
-            target_runway TEXT
-        )`, (err) => {
-            if (err) console.error('Error creating SQLite table:', err);
-            else console.log('SQLite Flight Logs table ready.');
-        });
-    }
-}
+const FlightLog = mongoose.model('FlightLog', flightLogSchema);
 
 function logAircraftState(aircraft) {
-    const now = new Date().toISOString();
-    const values = [
-        now,
-        aircraft.id,
-        aircraft.callsign,
-        aircraft.type,
-        aircraft.state,
-        aircraft.altitude,
-        aircraft.speed,
-        aircraft.heading,
-        aircraft.x,
-        aircraft.y,
-        aircraft.targetRunway || 'NONE'
-    ];
+    const logEntry = new FlightLog({
+        aircraft_id: aircraft.id,
+        callsign: aircraft.callsign,
+        type: aircraft.type,
+        state: aircraft.state,
+        altitude: aircraft.altitude,
+        speed: aircraft.speed,
+        heading: aircraft.heading,
+        x: aircraft.x,
+        y: aircraft.y,
+        target_runway: aircraft.targetRunway || 'NONE',
+        squawk: aircraft.squawk,
+        fuel: aircraft.fuel
+    });
 
-    if (isPostgres) {
-        const query = `INSERT INTO flight_logs (
-            timestamp, aircraft_id, callsign, type, state,
-            altitude, speed, heading, x, y, target_runway
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`;
-        pgPool.query(query, values, (err) => {
-            if (err) console.error('Error logging aircraft state to PG:', err);
-        });
-    } else {
-        const query = `INSERT INTO flight_logs (
-            timestamp, aircraft_id, callsign, type, state,
-            altitude, speed, heading, x, y, target_runway
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-        sqliteDb.run(query, values, (err) => {
-            if (err) console.error('Error logging aircraft state to SQLite:', err);
-        });
-    }
+    logEntry.save().catch(err => console.error('Error logging to MongoDB:', err));
 }
 
 function getAllLogs(callback) {
-    if (isPostgres) {
-        pgPool.query("SELECT * FROM flight_logs ORDER BY timestamp DESC", (err, result) => {
-            if (err) callback(err, null);
-            else callback(null, result.rows);
-        });
-    } else {
-        sqliteDb.all("SELECT * FROM flight_logs ORDER BY timestamp DESC", [], (err, rows) => {
-            if (err) callback(err, null);
-            else callback(null, rows);
-        });
-    }
+    FlightLog.find().sort({ timestamp: -1 }).lean()
+        .then(logs => callback(null, logs))
+        .catch(err => callback(err, null));
 }
 
 module.exports = {

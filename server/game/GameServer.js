@@ -86,14 +86,10 @@ class GameServer {
         });
 
         // Check conflicts
-        const conflicts = this.conflictDetector.checkConflicts();
-        if (conflicts.length > 0) {
-            conflicts.forEach(c => {
-                // Rate limit logs or check if already logged
-                if (Math.random() < 0.05) { // Simple rate limit
-                    this.log(`WARNING: Conflict detected between ${c.a1.callsign} and ${c.a2.callsign}`);
-                }
-            });
+        this.conflicts = this.conflictDetector.checkConflicts();
+        if (this.conflicts.length > 0) {
+            // Already logging in ConflictDetector for RA, but we can log TA here if we want.
+            // For now, ConflictDetector handles logging.
         }
 
         // Broadcast state
@@ -158,6 +154,7 @@ class GameServer {
             aircrafts: Array.from(this.aircrafts.values()).map(a => a.toJSON()),
             runways: Array.from(this.runways.values()).map(r => r.toJSON()),
             weather: this.weather.toJSON(),
+            conflicts: this.conflicts || [],
             logs: this.logs
         };
     }

@@ -1,11 +1,12 @@
 import React, { useEffect, useRef } from 'react';
 
-const RadarView = ({ aircrafts, runways, weather }) => {
+const RadarView = ({ aircrafts, runways, weather, conflicts = [] }) => {
     const canvasRef = useRef(null);
 
     const aircraftsRef = useRef(aircrafts);
     const runwaysRef = useRef(runways);
     const weatherRef = useRef(weather);
+    const conflictsRef = useRef(conflicts);
     const historyMap = useRef(new Map());
 
     // Update refs whenever props change, without restarting the animation loop
@@ -13,7 +14,8 @@ const RadarView = ({ aircrafts, runways, weather }) => {
         aircraftsRef.current = aircrafts;
         runwaysRef.current = runways;
         weatherRef.current = weather;
-    }, [aircrafts, runways, weather]);
+        conflictsRef.current = conflicts;
+    }, [aircrafts, runways, weather, conflicts]);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -171,11 +173,17 @@ const RadarView = ({ aircrafts, runways, weather }) => {
                     if (history.length > 5) history.shift(); // Keep last 5 points
                 }
 
+                // Check TCAS Conflicts
+                const conflict = conflictsRef.current.find(c => c.a1 === ac.id || c.a2 === ac.id);
+
                 // Determine Colors
                 let color, glowColor;
-                if (ac.emergency) {
-                    color = '#ef4444'; // Red
-                    glowColor = 'rgba(239, 68, 68, 0.8)';
+                if (ac.emergency || (conflict && conflict.type === 'RA')) {
+                    color = '#ef4444'; // Red (Emergency or Resolution Advisory)
+                    glowColor = 'rgba(239, 68, 68, 1)';
+                } else if (conflict && conflict.type === 'TA') {
+                    color = '#eab308'; // Yellow (Traffic Advisory)
+                    glowColor = 'rgba(234, 179, 8, 0.8)';
                 } else if (ac.type === 'ARRIVAL') {
                     color = '#34d399'; // Emerald
                     glowColor = 'rgba(52, 211, 153, 0.8)';
@@ -229,11 +237,14 @@ const RadarView = ({ aircrafts, runways, weather }) => {
 
                 // Draw Label (Callsign, Altitude, Speed) with background for readability
                 ctx.fillStyle = 'rgba(15, 23, 42, 0.7)'; // Dark bg for label
-                ctx.fillRect(x + 6, y - 16, 50, 32);
+                ctx.fillRect(x + 6, y - 16, 75, 32);
 
                 ctx.fillStyle = color;
                 ctx.font = 'bold 11px "Space Mono", monospace';
                 ctx.fillText(ac.callsign, x + 8, y - 6);
+                
+                ctx.fillStyle = '#64748b'; // Slate 500 for Squawk
+                ctx.fillText(`[${ac.squawk}]`, x + 48, y - 6);
 
                 ctx.font = '10px "Space Mono", monospace';
                 ctx.fillStyle = '#cbd5e1'; 

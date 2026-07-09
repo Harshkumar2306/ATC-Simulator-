@@ -292,8 +292,8 @@ const RadarView = ({ aircrafts, runways, weather, conflicts = [] }) => {
             });
 
             // Radar Sweep Effect (Visual only)
-            const time = Date.now() / 2000;
-            const angle = time % (Math.PI * 2);
+            const sweepTime = Date.now() / 2000;
+            const angle = sweepTime % (Math.PI * 2);
 
             ctx.save();
             ctx.translate(centerX, centerY);

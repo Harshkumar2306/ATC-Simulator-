@@ -30,7 +30,12 @@ const RadarView = ({ aircrafts, runways, weather, conflicts = [] }) => {
         const centerY = height / 2;
         const scale = Math.min(width, height) / 240; // Scale 120 units to half-width
 
-        const render = () => {
+        let lastTime = performance.now();
+
+        const render = (time) => {
+            const dt = (time - lastTime) / 1000;
+            lastTime = time;
+
             // Fade out previous frame (Ghosting / Trail effect)
             ctx.fillStyle = 'rgba(15, 23, 42, 0.25)'; // Slate 900 with alpha
             ctx.fillRect(0, 0, width, height);
@@ -160,6 +165,14 @@ const RadarView = ({ aircrafts, runways, weather, conflicts = [] }) => {
             // Draw Aircraft
             aircraftsRef.current.forEach(ac => {
                 if (ac.state === 'FINISHED') return;
+
+                // Client-side Extrapolation (Smooth 60FPS movement between 20Hz server ticks)
+                if (['AIRBORNE', 'LANDING', 'TAKEOFF', 'TAXIING', 'TAXI_OUT'].includes(ac.state)) {
+                    const moveSpeed = (ac.speed / 100) * 2;
+                    const rad = ac.heading * (Math.PI / 180);
+                    ac.x += Math.cos(rad) * moveSpeed * dt;
+                    ac.y += Math.sin(rad) * moveSpeed * dt;
+                }
 
                 const x = centerX + ac.x * scale;
                 const y = centerY + ac.y * scale;

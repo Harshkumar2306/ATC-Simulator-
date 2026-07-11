@@ -107,7 +107,7 @@ function App() {
           </div>
           <div>
             <h1 className="text-lg font-bold text-slate-100 tracking-tight leading-none">ATC COMMAND</h1>
-            <p className="text-slate-500 text-xs uppercase tracking-widest mt-1">Airport Traffic Control System v1.0</p>
+            <p className="text-slate-500 text-xs uppercase tracking-widest mt-1">Airport Traffic Control System</p>
           </div>
         </div>
 

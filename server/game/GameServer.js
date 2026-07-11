@@ -49,13 +49,13 @@ class GameServer {
             this.update();
         }, this.tickRate);
 
-        // Randomly spawn aircraft every 30-60 seconds
+        // Randomly spawn aircraft every 25 seconds
         setInterval(() => {
-            if (this.aircrafts.size < 10) {
-                const type = Math.random() > 0.5 ? 'ARRIVAL' : 'DEPARTURE';
+            if (this.aircrafts.size < 15) {
+                const type = Math.random() > 0.4 ? 'ARRIVAL' : 'DEPARTURE';
                 this.spawnAircraft(type);
             }
-        }, 45000);
+        }, 25000);
 
         // Database Logging Interval (Every 5 seconds)
         setInterval(() => {

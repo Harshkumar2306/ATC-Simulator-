@@ -32,8 +32,10 @@ function App() {
 
     socket.on('connect_error', (err) => {
       console.error("Connection Error:", err.message);
-      // If auth failed, potential logout
+      // If auth failed (e.g. server restarted and cleared in-memory tokens), fully logout to prevent infinite reconnect loop
       if (err.message === "Unauthorized") {
+        localStorage.removeItem('atc_token');
+        socket.disconnect();
         setViewMode('login');
       }
     });

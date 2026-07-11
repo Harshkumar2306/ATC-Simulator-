@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { socket } from '../services/socket';
 
 const RadarView = ({ aircrafts, runways, weather, conflicts = [] }) => {
     const canvasRef = useRef(null);
@@ -9,13 +10,28 @@ const RadarView = ({ aircrafts, runways, weather, conflicts = [] }) => {
     const conflictsRef = useRef(conflicts);
     const historyMap = useRef(new Map());
 
-    // Update refs whenever props change, without restarting the animation loop
+    // Initialize refs with initial props
     useEffect(() => {
         aircraftsRef.current = aircrafts;
         runwaysRef.current = runways;
         weatherRef.current = weather;
         conflictsRef.current = conflicts;
-    }, [aircrafts, runways, weather, conflicts]);
+    }, []); // Only run once on mount
+
+    // Direct high-speed 20Hz pipeline to bypass React DOM throttling
+    useEffect(() => {
+        const handleFastState = (data) => {
+            aircraftsRef.current = data.aircrafts;
+            runwaysRef.current = data.runways;
+            weatherRef.current = data.weather;
+            conflictsRef.current = data.conflicts || [];
+        };
+
+        socket.on('gameState', handleFastState);
+        return () => {
+            socket.off('gameState', handleFastState);
+        };
+    }, []);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -211,8 +227,7 @@ const RadarView = ({ aircrafts, runways, weather, conflicts = [] }) => {
                 history.forEach((pt, i) => {
                     const alpha = Math.pow((i + 1) / (history.length + 1), 2); // Exponential phosphor decay
                     ctx.fillStyle = color;
-                    ctx.shadowBlur = 4;
-                    ctx.shadowColor = color;
+                    // Removed expensive shadowBlur for performance
                     ctx.globalAlpha = alpha * 0.8;
                     ctx.beginPath();
                     ctx.arc(pt.x, pt.y, 1.2, 0, Math.PI * 2);

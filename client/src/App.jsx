@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { socket, connectSocket, connectGuest } from './services/socket';
 import RadarView from './components/RadarView';
 import FlightList from './components/FlightList';
@@ -10,6 +10,7 @@ import { Plane, TowerControl, Radio } from 'lucide-react';
 
 function App() {
   const [gameState, setGameState] = useState(null);
+  const gameStateRef = useRef(null);
   const [connected, setConnected] = useState(false);
   const [viewMode, setViewMode] = useState(() => {
     return localStorage.getItem('atc_token') ? 'controller' : 'login';
@@ -41,14 +42,22 @@ function App() {
     });
 
     socket.on('gameState', (data) => {
-      setGameState(data);
+      gameStateRef.current = data;
     });
+
+    // Throttle React DOM re-renders to 2 FPS to prevent CPU burnout
+    const uiInterval = setInterval(() => {
+      if (gameStateRef.current) {
+        setGameState(gameStateRef.current);
+      }
+    }, 500);
 
     return () => {
       socket.off('connect');
       socket.off('disconnect');
       socket.off('connect_error');
       socket.off('gameState');
+      clearInterval(uiInterval);
     };
   }, []);
 

@@ -33,8 +33,8 @@ const LoginForm = ({ onLoginSuccess, onGuestLogin }) => {
                 <div className="flex justify-center mb-4">
                     <div className="relative group">
                         <div className="absolute inset-0 bg-emerald-500 blur-xl opacity-20 group-hover:opacity-40 transition-opacity duration-500 rounded-full"></div>
-                        <div className="w-28 h-28 bg-slate-900 border border-slate-700 rounded-3xl flex items-center justify-center relative z-10 shadow-2xl">
-                            <PlaneTakeoff className="w-14 h-14 text-emerald-400" />
+                        <div className="w-28 h-28 bg-slate-900 border border-slate-700 rounded-3xl flex items-center justify-center relative z-10 shadow-2xl overflow-hidden">
+                            <img src="/logo.png" alt="ATC Logo" className="w-full h-full object-cover" />
                         </div>
                     </div>
                 </div>

@@ -15,14 +15,10 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 const TOKENS = new Set(); // In-memory token store
 
 app.post('/login', (req, res) => {
-    const { password } = req.body;
-    if (password === ADMIN_PASSWORD) {
-        const token = require('crypto').randomUUID(); // Node 19+ or older using crypto module
-        TOKENS.add(token);
-        res.json({ success: true, token });
-    } else {
-        res.status(401).json({ success: false, message: 'Invalid credentials' });
-    }
+    // Open access for portfolio showcase
+    const token = require('crypto').randomUUID(); 
+    TOKENS.add(token);
+    res.json({ success: true, token });
 });
 
 app.get('/export', (req, res) => {

@@ -31,21 +31,22 @@ const LoginForm = ({ onLoginSuccess, onGuestLogin }) => {
             {/* LEFT SECTION: Information & Features */}
             <div className="z-10 w-full md:w-1/2 flex flex-col items-start text-left space-y-6 max-w-xl">
                 
-                {/* Logo Area */}
-                <div className="flex mb-1">
-                    <div className="relative group">
+                {/* Hero Title & Logo inline */}
+                <div className="flex items-center gap-4 mb-2">
+                    <div className="relative group shrink-0">
                         <div className="absolute inset-0 bg-emerald-500 blur-lg opacity-20 group-hover:opacity-40 transition-opacity duration-500 rounded-full"></div>
                         <div className="w-16 h-16 bg-slate-900 border border-slate-700 rounded-2xl flex items-center justify-center relative z-10 shadow-2xl overflow-hidden">
                             <img src="/logo.png" alt="ATC Logo" className="w-full h-full object-cover" />
                         </div>
                     </div>
-                </div>
-
-                {/* Hero Text */}
-                <div className="space-y-4">
+                    
                     <h1 className="text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 tracking-tight leading-tight">
                         ATC COMMAND
                     </h1>
+                </div>
+
+                {/* Hero Description */}
+                <div className="space-y-4">
                     <p className="text-slate-400 text-base lg:text-lg leading-relaxed font-light">
                         Step into the high-stakes environment of a modern Air Traffic Control tower. 
                         Manage real-time airspace physics, coordinate landings, and resolve TCAS conflicts.
